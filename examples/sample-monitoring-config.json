@@ -1,0 +1,6 @@
+{
+    "sysdig_args": "(container.name contains k8s_front-end)",
+    "sysdig_format": "%evt.type",
+    "syscalls_window": 5,
+    "syscalls_compression": "true"
+}

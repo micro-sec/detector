@@ -1,0 +1,5 @@
+{
+    "type": "detection",
+    "algorithm": "bosc",
+    "duration": 1800
+}

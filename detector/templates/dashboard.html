@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    {% if is_dashboard and monitoring_status and inspecting_status <= 0 %}
+        <div class="alert alert-info m-lg-3" role="alert">
+            Choose an algorithm to inspect the system calls by clicking on the icon '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+        </svg>' in the top right corner
+        </div>
+    {% endif %}
+
+    {% if is_dashboard and not monitoring_status %}
+        <div class="alert alert-warning mt-3 m-lg-3" role="alert">
+            The Daemon is running but no monitoring configuration was provided. Go to the <a href="/help">Help</a> tab for more information.
+        </div>
+    {% endif %}
+
+    <!-- Overview -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Overview</h5>
+            <div class="container-fluid">
+                <div class="row">
+                    {% if monitoring_status %}
+                        <div class="col">
+                            <b class="card-text">Monitoring configurations:</b>
+                            <div class="overflow-auto mb-2 ">
+                                <ul class="list-group">
+                                    <li class="list-group-item"><b>Start time:</b>&nbsp;&nbsp;<span id="monitoringStartTime">{{config["start_time"]}}</span></li>
+                                    <li class="list-group-item" style="display: none"><span id="monitoringStartTimeTimestamp">{{config["start_time_timestamp"]}}</span></li>
+                                    <li class="list-group-item"><b>Monitoring Elapsed Time:</b>&nbsp;&nbsp;<span id="monitoringElapsedTime"></span></li>
+                                    <li class="list-group-item"><b>Sysdig Args:</b>&nbsp;&nbsp;<span id="sysdig_args">{{config["sysdig_args"]}}</span></li>
+                                    <li class="list-group-item"><b>Syscalls Compression:</b>&nbsp;&nbsp;<span id="syscallsCompression">{{config["syscalls_compression"]}}</span></li>
+                                    <li class="list-group-item"><b>Intrusion detection instances:</b>&nbsp;&nbsp;<span id="intrusionDetectionInstances">{{inspecting_status}}</span>
+                                        {% if inspecting_status > 0 %}
+                                            <!-- Button trigger IDS Instances modal -->
+                                            <button type="button" class="btn btn-outline-primary float-end" data-toggle="modal" data-target="#intrusionDetectionInstancesModal">
+                                                Manage Instances
+                                            </button>
+                                            <!-- IDS Instances modal -->
+                                            <div class="modal fade" id="intrusionDetectionInstancesModal" tabindex="-1" role="dialog" aria-labelledby="intrusionDetectionInstancesLabel" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="exampleModalLabel">Intrusion Detection Instances</h5>
+                                                            <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
+                                                            </button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="overflow-auto">
+                                                                <span style="display: none" id="allDetections">{% for i in ids_config %}{{i.identifier}},{% endfor %}</span>
+                                                                {% for i in ids_config %}
+                                                                    <div class="accordion" id="inspectingAccordion">
+                                                                        <div class="accordion-item">
+                                                                            <h2 class="accordion-header" id="{{i.identifier}}Heading">
+                                                                                <button class="accordion-button collapsed" type="button" data-toggle="collapse" data-target="#{{i.identifier}}Collapse" aria-expanded="true" aria-controls="{{i.identifier}}Collapse">
+                                                                                    <span class="text-primary">{{i.identifier}}</span>
+                                                                                </button>
+                                                                            </h2>
+                                                                            <div id="{{i.identifier}}Collapse" class="accordion-collapse collapse" aria-labelledby="{{i.identifier}}Heading" data-parent="#inspectingAccordion">
+                                                                                <div class="accordion-body">
+                                                                                    <ul class="list-group">
+                                                                                        <div>
+                                                                                            <button type="button" value={{ i.identifier }} onclick="stopInspecting(this.value)" class="btn btn-outline-primary mb-2 float-end">
+                                                                                                Stop
+                                                                                            </button>
+                                                                                        </div>
+                                                                                        <li class="list-group-item"><b>Id:</b>&nbsp;&nbsp;<span id="inspectingIdentifier_{{i.identifier}}">{{i.identifier}}</span></li>
+                                                                                        <li class="list-group-item"><b>Type:</b>&nbsp;&nbsp;<span id="inspectingType_{{i.identifier}}">{{i.detection_type}}</span></li>
+                                                                                        <li class="list-group-item"><b>Algorithm:</b>&nbsp;&nbsp;<span id="inspectingAlgorithm_{{i.identifier}}">{{i.algorithm}}</span></li>
+                                                                                        <li class="list-group-item"><b>Start time:</b>&nbsp;&nbsp;<span id="inspectingStartTime_{{i.identifier}}">{{i.start_time}}</span></li>
+                                                                                        <li class="list-group-item"><b>Duration (seconds):</b>&nbsp;&nbsp;<span id="inspectingDuration_{{i.identifier}}">{% if i.duration <= 0 %}&infin;{% else %}{{i.duration}}{% endif %}</span></li>
+                                                                                        <li class="list-group-item" style="display: none"><span id="inspectingStartTimeTimestamp_{{i.identifier}}">{{i["start_time_timestamp"]}}</span></li>
+                                                                                        <li class="list-group-item"><b>Elapsed Time:</b>&nbsp;&nbsp;<span id="inspectingElapsedTime_{{i.identifier}}"></span></li>
+                                                                                    </ul>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                {% endfor %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <!-- Stop inspecting all button -->
+                                                            <div class="text-center">
+                                                                <button type="button" onclick="stopInspecting()" class="btn btn-outline-danger">
+                                                                    Stop all instances
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="col-4">
+                        <b class="card-text">Nodes:</b>
+                        <div class="overflow-auto" style="height: 200px">
+                            <ul class="list-group">
+                                {% for node in nodes %}
+                                    <li class="list-group-item">{{node["name"]}}&nbsp;({{node["ip_address"]}})&nbsp;
+                                    {% if node["agent"] == "true" %}
+                                        <span class="badge bg-success">Agent</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">No Agent</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitoring Stats and Syscalls Chart-->
+    {% if config %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Monitoring</h5>
+                <div class="container-fluid mb-5">
+                    <div class="card-group">
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="card-text"><b>Alarms: </b><span class="badge bg-danger" id="totalAlarms"></span></p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="card-text"><b>Syscalls: </b><span id="totalSyscalls"></span></p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="card-text"><b>Total Size: </b><span id="totalSize"></span> bytes</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="card-text"><b>Batches: </b><span id="totalBatches"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div id="syscallsChart"></div>
+                    </div>
+                </div>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div id="alarmsChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Latest Alarms -->
+        {% if inspecting_status > 0 %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Latest Alarms</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">Alarms contain a timestamp and a description. The list of alarms is automatically updated. To view the complete list navigate to the <a href="/alarms">Alarms</a> tab</h6>
+                    <table
+                            id="table"
+                            data-pagination="true"
+                            data-pagination-next-text="Next"
+                            data-pagination-pre-text="Previous"
+                            data-pagination-loop="false"
+                            data-pagination-parts="['pageList']"
+                            data-url="/api/alarms?size=5">
+                        <thead>
+                        <tr>
+                            <th data-field="timestamp" scope="col">Timestamp</th>
+                            <th data-field="description" scope="col">Description</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+
+                <script>
+                    $(document).ready(function () {
+                        $('#table').bootstrapTable({
+                            url: '/api/alarms?size=5',
+                            onLoadSuccess(data) {
+                                setTimeout(getUpdates, 5000)
+                            }
+                        })
+                        function getUpdates() {
+                            $('#table').bootstrapTable('refresh')
+                        };
+                    });
+                </script>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+</div>

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Help{% endblock %}
+{% block content %}
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Help</h5>
+            <h6 class="card-subtitle mb-2 text-muted">What is this?</h6>
+            <p><i>μDetector</i> is an Intrusion Detection Tool for Microservices written mostly in Python.
+                It relies on proof-of-concept techniques of Intrusion Detection and automates their functioning for Kubernetes deployments.
+                In practice, after the user has provides a configuration, the tool automatically creates a monitoring agent in the
+                desired node(s) of the cluster which is responsible for collecting system calls
+                and transferring them over to the Intrusion Detection module of the tool.
+                This module covers all the stages of anomaly-based intrusion detection and all activity
+                classified as anomalous will trigger alarms in real-time indicating a possible
+                intrusion in the microservices application.
+                The user can interact with the tool and its monitoring capabilities through a command-line interface or
+                a Web Dashboard. The user is also encouraged to add algorithms to the tool.</p>
+            <div class="text-center">
+                <img src="../static/assets/architecture.png"  class="img-fluid " alt="μDetector Architecture">
+            </div>
+            <hr/>
+            <h6 class="card-subtitle mb-2 text-muted">How to?</h6>
+            <a href="https://github.com/msnteixeira/detector">View instructions</a>
+            <hr/>
+
+            <h6 class="card-subtitle mb-2 text-muted">Algorithms</h6>
+            <ul>
+                {% for item in algorithms %}
+                    <li><b>{{ item["name"] }}</b> - {{ item["description"] }}</li>
+                {% endfor %}
+            </ul>
+            <hr/>
+            <h6 class="card-subtitle mb-2 text-muted">About</h6>
+            This work is a product of the Master Thesis in Informatics Engineering, Specialization in
+            Software Engineering, of the student Miguel de Sousa Nunes Teixeira during the academic
+            year of 2021/2022, taking place in DEI, Faculty of Sciences and Technology of the University of Coimbra.
+        </div>
+    </div>
+{% endblock %}

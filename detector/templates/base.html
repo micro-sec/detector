@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>μDetector - {% block title %}{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="../static/assets/favicon.ico" />
+    <link href="../static/css/styles.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.css">
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.js"  integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"  integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"  integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.19.1/dist/bootstrap-table.min.js"></script>
+    <script type="text/javascript" src="../static/js/utils.js"></script>
+    <script type="text/javascript" src="../static/js/sweetalert2.all.min.js"></script>
+</head>
+<body>
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar-->
+    <div class="border-end bg-white" id="sidebar-wrapper">
+        <div class="sidebar-heading border-bottom bg-light">
+            <b><i>μDetector</i></b>
+        </div>
+        <div class="list-group list-group-flush">
+            <a class="list-group-item list-group-item-action list-group-item-light p-3" href="/dashboard">{% if request.path == "/dashboard" or request.path == "/" %}<b>Dashboard</b>{% else %}Dashboard{% endif %}</a>
+            <a class="list-group-item list-group-item-action list-group-item-light p-3" href="/alarms">{% if request.path == "/alarms" %}<b>Alarms</b>{% else %}Alarms{% endif %}</a>
+            <a class="list-group-item list-group-item-action list-group-item-light p-3" href="/resources">{% if request.path == "/algorithms" %}<b>Resources</b>{% else %}Resources{% endif %}</a>
+            <a class="list-group-item list-group-item-action list-group-item-light p-3" href="/help">{% if request.path == "/help" %}<b>Help</b>{% else %}Help{% endif %}</a>
+            <!--<a class="nav-link" href="https://github.com/msnteixeira" target="_blank" rel="noopener noreferrer">View on GitHub
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-github" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+            </a>-->
+        </div>
+    </div>
+    <!-- Page content wrapper-->
+    <div id="page-content-wrapper">
+        <!-- Header-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+            <div class="container-fluid">
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="nav justify-content-center">
+                        <li class="nav-item">
+                            <a class="nav-link disabled" href="#">An Intrusion Detection Tool for Microservices</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
+                        <!-- Start inspecting Button trigger modal -->
+                        {% if is_dashboard and monitoring_status %}
+                            <li class="nav-item active">
+                                <button type="button" onclick="startInspecting()" class="btn btn-default navbar-btn" data-toggle="tooltip" data-placement="left" title="Start inspecting">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
+                                    </svg>
+                                </button>
+                            </li>
+                        {% endif %}
+                        <!-- Start monitoring Button trigger modal -->
+                        {% if is_dashboard and not monitoring_status %}
+                            <li class="nav-item active">
+                                <button type="button" onclick="startMonitoring()" class="btn btn-default navbar-btn" data-toggle="tooltip" data-placement="left" title="Start monitoring">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"></path>
+                                    </svg>
+                                </button>
+                            </li>
+                        {% endif %}
+                        <!-- Stop monitoring button -->
+                        {% if is_dashboard and monitoring_status %}
+                            <li class="nav-item active">
+                                <button type="button" onclick="stopMonitoring()" class="btn btn-default navbar-btn" data-toggle="tooltip" data-placement="left" title="Stop monitoring">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd" d="M13.854 2.146a.5.5 0 0 1 0 .708l-11 11a.5.5 0 0 1-.708-.708l11-11a.5.5 0 0 1 .708 0Z"></path>
+                                        <path fill-rule="evenodd" d="M2.146 2.146a.5.5 0 0 0 0 .708l11 11a.5.5 0 0 0 .708-.708l-11-11a.5.5 0 0 0-.708 0Z"></path>
+                                    </svg>
+                                </button>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+</script>
+
+<!-- Chart Scripts -->
+{% if is_dashboard and monitoring_status %}
+    <script type="text/javascript" src="../static/js/echarts.js" ></script>
+    <script type="text/javascript" src="../static/js/stats.js" ></script>
+{% endif %}
+</body>
+</html>

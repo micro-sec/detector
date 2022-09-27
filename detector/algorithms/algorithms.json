@@ -1,0 +1,10 @@
+[
+  {
+    "name": "bosc",
+    "description": "The BoSC (Bags of System Calls) algorithm uses a sliding window over a collection of system calls to detect intrusions and define a baseline behavior database, which contains bags of system calls considered normal. The order in which the system calls are made is not taken into account because this algorithm counts the frequency of each system call every time it appears in the sliding window."
+  },
+  {
+    "name": "stide",
+    "description": "The STIDE (Sequence Time-Delaying Embedding) algorithm uses a window sliding over a collection of system calls to define a baseline behavior database that will be used in the detection phase to find possible intrusions. Unlike BoSC, it maintains the original order of system calls."
+  }
+]

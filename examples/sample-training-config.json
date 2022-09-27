@@ -1,0 +1,5 @@
+{
+    "type": "training",
+    "algorithm": "bosc",
+    "duration": 10
+}
