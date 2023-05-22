@@ -5,11 +5,9 @@
 ## What is it?
 μDetector is a tool that relies on proof-of-concept techniques of Intrusion Detection and automates their functioning for Kubernetes and KubeEdge deployments. In practice, after the user has provided a configuration, the tool uses monitoring agents to automatically collect system calls from the desired containers and transfers them over to the Intrusion Detection module of the tool. This module covers all the stages of anomaly-based intrusion detection and all activity classified as anomalous will trigger alarms in real-time indicating a possible intrusion in the microservices’ application. The user can interact with the tool and its monitoring capabilities through a command-line interface or a web dashboard.
 
-To know more about each component click the following links:
-- [architecture](docs/architecture.md)
-- [agent](agent/README.md)
-- [daemon](daemon/README.md)
-- [detector](detector/README.md)
+To know more about each component click the following link:
+
+- [https://micro-sec.github.io/detector](https://micro-sec.github.io/detector)
 
 ## Installation
 Pre-requisites include a kubernetes cluster setup (for example [TeaStore](https://github.com/DescartesResearch/TeaStore) or [Sockshop](https://github.com/microservices-demo/microservices-demo)), sysdig (v0.28.0) and a redis server installed and configured
