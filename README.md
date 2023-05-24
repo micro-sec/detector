@@ -13,7 +13,7 @@ To know more about each component click the following link:
 Pre-requisites include a kubernetes cluster setup (for example [TeaStore](https://github.com/DescartesResearch/TeaStore) or [Sockshop](https://github.com/microservices-demo/microservices-demo)), sysdig (v0.28.0) and a redis server installed and configured
 
 ```bash
-git clone [REPOSITORY]
+git clone https://micro-sec.github.io/detector
 cd detector
 python3 -m pip install -r requirements.txt
 python3 -m pip install -e .
@@ -36,6 +36,19 @@ Use the CLI or access the Web Dashboard at http://localhost:5001/
 
 Tip: Consider using tmux sessions
 
+
+### Video Demonstration
+
+[![Watch the demo](docs/assets/demo.png)](docs/assets/detector_demo.mp4)
+
+
+## Publications
+
+[1] Miguel Teixeira. µDetector: An Intrusion Detection Tool for Microservices. MSc thesis. 2022. 
+
+[2] Flora, J., Teixeira, M., Antunes, N., "µDetector: Automated Intrusion Detection for Microservices." 2023 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER). IEEE, 2023. [https://ieeexplore.ieee.org/document/10123583](https://ieeexplore.ieee.org/document/10123583)
+
+
 ## About
 
 The work presented in this thesis was carried out within the Software and Systems Engineering (SSE) group of the Centre for Informatics and Systems of the University of Coimbra (CISUC)
@@ -44,6 +57,4 @@ This work is partially supported by the project AIDA: Adaptive, Intelligent and 
 
 This work has been supervised by Prof. Nuno Antunes and José Flora, and presented to the Department of Informatics Engineering of the Faculty of Sciences and Technology of the University of Coimbra.
 
-Contact us at msnteixeira@gmail.com for more information.
-
-[MIT](https://choosealicense.com/licenses/mit/)
+![Acknowledgments](docs/assets/acknowledgments.png "Acknowledgments")
