@@ -6,7 +6,7 @@ from flask_cors import CORS
 from requests import get
 from werkzeug import Response
 
-from detector.config import KUBE_PROXY_IP, KUBE_PROXY_PORT, AGENT_PORT, DAEMON_PORT
+from detector.config import KUBE_PROXY_IP, AGENT_PORT, DAEMON_PORT, REQUESTS_TOKEN, KUBE_PROXY_PORT
 
 app = Flask(__name__)
 CORS(app)
@@ -17,25 +17,47 @@ nodes = list()
 def get_nodes():
     global nodes
     nodes = list()
-    response = requests.get("http://" + KUBE_PROXY_IP + ":" + str(KUBE_PROXY_PORT) + "/api/v1/nodes").json()["items"]
-    for node in response:
-        try:
-            if requests.get(
-                    "http://" + node["status"]["addresses"][0]["address"] + ":" + str(AGENT_PORT), timeout=2).status_code == 200:
+    if REQUESTS_TOKEN is None:
+        response = requests.get("http://" + KUBE_PROXY_IP + ":" + str(KUBE_PROXY_PORT) + "/api/v1/nodes").json()["items"]
+        for node in response:
+            try:
+                if requests.get(
+                        "http://" + node["status"]["addresses"][0]["address"] + ":" + str(AGENT_PORT), timeout=2).status_code == 200:
+                    nodes.append({
+                        "name": node["metadata"]["name"],
+                        "ip_address": node["status"]["addresses"][0]["address"],
+                        "agent": "true"
+                    })
+                else:
+                    raise Exception
+            except Exception:
                 nodes.append({
                     "name": node["metadata"]["name"],
                     "ip_address": node["status"]["addresses"][0]["address"],
-                    "agent": "true"
+                    "agent": "false"
                 })
-            else:
-                raise Exception
-        except Exception:
-            nodes.append({
-                "name": node["metadata"]["name"],
-                "ip_address": node["status"]["addresses"][0]["address"],
-                "agent": "false"
-            })
-
+    else:
+        response = requests.get("https://" + KUBE_PROXY_IP + "/api/v1/pods",
+                                headers={'Authorization': 'Bearer ' + REQUESTS_TOKEN}).json()["items"]
+        for pod in response:
+            ip = pod["status"]["podIP"]
+            name = pod["spec"]["nodeName"]
+            try:
+                if pod["metadata"]["name"].startswith("detector-agent-"):
+                    if requests.get(f"http://{ip}:{AGENT_PORT}", timeout=2).status_code == 200:
+                        nodes.append({
+                            "name": name,
+                            "ip_address": ip,
+                            "agent": "true"
+                        })
+                    else:
+                        raise Exception
+            except Exception:
+                nodes.append({
+                    "name": pod["metadata"]["name"],
+                    "ip_address": pod["status"]["addresses"][0]["address"],
+                    "agent": "false"
+                })
 
 @app.route('/', methods=["GET"])
 @app.route('/status', methods=["GET"])
@@ -52,7 +74,10 @@ def agents():
 
 @app.route('/proxy/<path:path>')
 def proxy(path):
-    response = Response(get(f'{path}').content)
+    if REQUESTS_TOKEN is None:
+        response = Response(get(f'{path}').content)
+    else:
+        response = Response(get(f'{path}', headers={'Authorization': 'Bearer ' + REQUESTS_TOKEN}).content)
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
