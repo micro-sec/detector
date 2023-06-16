@@ -92,39 +92,43 @@ def get_batch(host_ip):
 
 
 async def syscall_transfer(agent):
-    async with websockets.connect("ws://" + agent.ip_address + ":" + str(agent.ws_port),
-                                  max_size=agent.ws_max_size, ping_interval=None) as websocket:
-        try:
-            print("Receiving system calls from node \"" + agent.name + "\" (" + agent.ip_address + ")")
-            async for data in websocket:
-                # Handle the system calls received
-                if agent.syscalls_compression == "true":
-                    decompressed_pickle = blosc2.decompress(data)
-                    batch = pickle.loads(decompressed_pickle)
-                else:
-                    batch = pickle.loads(data)
+    while True:
+        try: # retry in case the agent is not ready
+            async with websockets.connect("ws://" + agent.ip_address + ":" + str(agent.ws_port),
+                                        max_size=agent.ws_max_size, ping_interval=None) as websocket:
+                try:
+                    print("Receiving system calls from node \"" + agent.name + "\" (" + agent.ip_address + ")")
+                    async for data in websocket:
+                        # Handle the system calls received
+                        if agent.syscalls_compression == "true":
+                            decompressed_pickle = blosc2.decompress(data)
+                            batch = pickle.loads(decompressed_pickle)
+                        else:
+                            batch = pickle.loads(data)
 
-                batch_length = len(batch)
+                        batch_length = len(batch)
 
-                # Store batch in redis (push to queue)
-                redis_connection.rpush("batch-" + agent.ip_address, decompressed_pickle)
+                        # Store batch in redis (push to queue)
+                        redis_connection.rpush("batch-" + agent.ip_address, decompressed_pickle)
 
-                # Limit the number of batches to REDIS_MAX_BATCH
-                redis_connection.ltrim("batch-" + agent.ip_address, - int(REDIS_MAX_BATCH), -1)
+                        # Limit the number of batches to REDIS_MAX_BATCH
+                        redis_connection.ltrim("batch-" + agent.ip_address, - int(REDIS_MAX_BATCH), -1)
 
-                print("Received batch from " + agent.ip_address + " containing " + str(
-                    batch_length) + " system calls with a size of " + str(
-                    sys.getsizeof(data)) + " bytes")
+                        print("Received batch from " + agent.ip_address + " containing " + str(
+                            batch_length) + " system calls with a size of " + str(
+                            sys.getsizeof(data)) + " bytes")
 
-                # Store stats in redis
-                redis_connection.incrby("monitoring_total_syscalls", batch_length)
-                redis_connection.incrby("monitoring_total_size", sys.getsizeof(data))
-                redis_connection.incrby("monitoring_total_batches", 1)
-                redis_connection.set("monitoring_batch_length", batch_length)
-        except (KeyboardInterrupt, Exception):
-            # traceback.print_exc()
-            stop_monitoring()
-            os._exit(1)
+                        # Store stats in redis
+                        redis_connection.incrby("monitoring_total_syscalls", batch_length)
+                        redis_connection.incrby("monitoring_total_size", sys.getsizeof(data))
+                        redis_connection.incrby("monitoring_total_batches", 1)
+                        redis_connection.set("monitoring_batch_length", batch_length)
+                except (KeyboardInterrupt, Exception):
+                    # traceback.print_exc()
+                    stop_monitoring()
+                    os._exit(1)
+        except:
+            pass
 
 
 def ws_client(agent):

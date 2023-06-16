@@ -1,0 +1,257 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: detector
+  labels:
+    name: detector
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: detector-role
+  namespace: detector
+rules:
+- apiGroups: ["apps", ""]
+  resources: ["namespaces", "nodes", "pods", "services", "deployments", "deployments.apps", "apps.deployments"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: detector-rbac
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: detector
+roleRef:
+  kind: ClusterRole
+  name: detector-role
+  apiGroup: rbac.authorization.k8s.io
+
+
+---
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detector-daemon
+spec:
+  selector:
+    matchLabels:
+      app: detector-daemon
+  template:
+    metadata:
+      labels:
+        app: detector-daemon
+    spec:
+      containers:
+        - name: detector-daemon
+          image: detector
+          env:
+            - name: KUBE_PROXY_IP
+              value: kubernetes.default.svc
+            - name: DAEMON_PORT
+              value: "9001"
+            - name: AGENT_PORT
+              value: "9002"
+            - name: REQUESTS_CA_BUNDLE
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - name: REQUESTS_TOKEN_FILE
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9001
+          command:
+            - "python3"
+            - "daemon/main.py"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: detector-daemon
+spec:
+  selector:
+    app: detector-daemon
+  type: ClusterIP
+  ports:
+  - port: 9001
+    targetPort: 9001
+
+---
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: detector-agent
+spec:
+  selector:
+    matchLabels:
+      app: detector-agent
+  template:
+    metadata:
+      labels:
+        app: detector-agent
+    spec:
+      containers:
+        - name: detector-agent
+          image: detector
+          env:
+            - name: AGENT_PORT
+              value: "9002"
+            - name: WS_PORT
+              value: "9003"
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9002
+          command: ["/bin/sh", "-c"]
+          args: ["/docker-entrypoint.sh; python3 agent/main.py;"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /host/var/run/docker.sock
+            - name: dev
+              mountPath: /host/dev
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: boot
+              mountPath: /host/boot
+              readOnly: true
+            - name: modules
+              mountPath: /host/lib/modules
+              readOnly: true
+            - name: usr
+              mountPath: /host/usr
+              readOnly: true
+            - name: etc
+              mountPath: /host/etc
+              readOnly: true
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        - name: dev
+          hostPath:
+            path: /dev
+            type: Directory
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+        - name: boot
+          hostPath:
+            path: /boot
+            type: Directory
+        - name: modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+        - name: usr
+          hostPath:
+            path: /usr
+            type: Directory
+        - name: etc
+          hostPath:
+            path: /etc
+            type: Directory
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detector-db
+spec:
+  selector:
+    matchLabels:
+      app: detector-db
+  template:
+    metadata:
+      labels:
+        app: detector-db
+    spec:
+      containers:
+        - name: detector-db
+          image: redis:7.0.11
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6379
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: detector-db
+spec:
+  selector:
+    app: detector-db
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: detector-detector
+spec:
+  selector:
+    matchLabels:
+      app: detector-detector
+  template:
+    metadata:
+      labels:
+        app: detector-detector
+    spec:
+      containers:
+        - name: detector-detector
+          image: detector
+          env:
+            - name: KUBE_PROXY_IP
+              value: kubernetes.default.svc
+            - name: REDIS_IP
+              value: detector-db
+            - name: REDIS_PORT
+              value: "6379"
+            - name: DETECTOR_PORT
+              value: "5001"
+            - name: DAEMON_IP
+              value: detector-daemon
+            - name: DAEMON_PORT
+              value: "9001"
+            - name: WS_PORT
+              value: "9003"
+            - name: REQUESTS_TOKEN_FILE
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5001
+          command:
+            - "python3"
+            - "detector/main.py"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: detector-detector
+spec:
+  selector:
+    app: detector-detector
+  type: NodePort
+  ports:
+  - port: 5001
+    nodePort: 31000

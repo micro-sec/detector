@@ -5,8 +5,7 @@ from time import time, ctime
 import requests
 from flask import Blueprint, make_response, request, jsonify
 
-from detector.config import DAEMON_IP, DAEMON_PORT, WS_PORT, WS_MAX_SIZE, ALGORITHMS_FILE, KUBE_PROXY_PORT, \
-    KUBE_PROXY_IP
+from detector.config import DAEMON_IP, DAEMON_PORT, WS_PORT, WS_MAX_SIZE, ALGORITHMS_FILE, KUBE_PROXY_IP, KUBE_PROXY_PORT, REQUESTS_TOKEN
 from detector.utils import start_monitoring, stop_monitoring, redis_connection, start_inspecting, stop_inspecting
 
 api = Blueprint("api", __name__, template_folder="templates")
@@ -112,9 +111,14 @@ def api_resources_pods():
     if request.args.get("namespace"):
         namespace = request.args.get("namespace")
     try:
-        pods += \
-            requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
-                KUBE_PROXY_PORT) + "/api/v1/namespaces/" + namespace + "/pods",
+        if REQUESTS_TOKEN is None:
+            pods += \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
+                    KUBE_PROXY_PORT) + "/api/v1/namespaces/" + namespace + "/pods",
+                            timeout=5).json()["items"]
+        else:
+            pods += \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/https://" + KUBE_PROXY_IP + "/api/v1/namespaces/" + namespace + "/pods",
                          timeout=5).json()["items"]
     except requests.exceptions.ConnectionError as e:
         print(e)
@@ -128,11 +132,17 @@ def api_resources_services():
     if request.args.get("namespace"):
         namespace = request.args.get("namespace")
     try:
-        services += \
-            requests.get(
-                "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
-                    KUBE_PROXY_PORT) + "/api/v1/namespaces/" + namespace + "/services",
-                timeout=5).json()["items"]
+        if REQUESTS_TOKEN is None:
+            services += \
+                requests.get(
+                    "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
+                        KUBE_PROXY_PORT) + "/api/v1/namespaces/" + namespace + "/services",
+                    timeout=5).json()["items"]
+        else:
+            services += \
+                requests.get(
+                    "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/https://" + KUBE_PROXY_IP  + "/api/v1/namespaces/" + namespace + "/services",
+                    timeout=5).json()["items"]
     except requests.exceptions.ConnectionError as e:
         print(e)
     return jsonify(services)
@@ -145,11 +155,17 @@ def api_resources_deployments():
     if request.args.get("namespace"):
         namespace = request.args.get("namespace")
     try:
-        deployments += \
-            requests.get(
-                "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
-                    KUBE_PROXY_PORT) + "/apis/apps/v1/namespaces/" + namespace + "/deployments",
-                timeout=5).json()["items"]
+        if REQUESTS_TOKEN is None:
+            deployments += \
+                requests.get(
+                    "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
+                        KUBE_PROXY_PORT) + "/apis/apps/v1/namespaces/" + namespace + "/deployments",
+                    timeout=5).json()["items"]
+        else:
+            deployments += \
+                requests.get(
+                    "http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/https://" + KUBE_PROXY_IP  + "/apis/apps/v1/namespaces/" + namespace + "/deployments",
+                    timeout=5).json()["items"]
     except requests.exceptions.ConnectionError as e:
         print(e)
     return jsonify(deployments)
@@ -159,9 +175,13 @@ def api_resources_deployments():
 def api_resources_namespaces():
     namespaces = list()
     try:
-        namespaces = \
-            requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
-                KUBE_PROXY_PORT) + "/api/v1/namespaces", timeout=5).json()["items"]
+        if REQUESTS_TOKEN is None:
+            namespaces = \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
+                    KUBE_PROXY_PORT) + "/api/v1/namespaces", timeout=5).json()["items"]
+        else:
+            namespaces = \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/https://" + KUBE_PROXY_IP + "/api/v1/namespaces", timeout=5).json()["items"]
     except requests.exceptions.ConnectionError as e:
         print(e)
     return jsonify(namespaces)
@@ -171,9 +191,13 @@ def api_resources_namespaces():
 def api_resources_nodes():
     nodes = list()
     try:
-        nodes = \
-            requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
-                KUBE_PROXY_PORT) + "/api/v1/nodes", timeout=5).json()["items"]
+        if REQUESTS_TOKEN is None:
+            nodes = \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/http://" + KUBE_PROXY_IP + ":" + str(
+                    KUBE_PROXY_PORT) + "/api/v1/nodes", timeout=5).json()["items"]
+        else:
+            nodes = \
+                requests.get("http://" + DAEMON_IP + ":" + str(DAEMON_PORT) + "/proxy/https://" + KUBE_PROXY_IP + "/api/v1/nodes", timeout=5).json()["items"]
     except requests.exceptions.ConnectionError as e:
         print(e)
     return jsonify(nodes)
